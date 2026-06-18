@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check:supabase": "node scripts/check-supabase-env.mjs",
+    "supabase:link": "supabase link",
+    "supabase:push": "supabase db push"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.17",
@@ -34,6 +37,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "supabase": "^2.107.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
