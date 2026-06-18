@@ -1,8 +1,10 @@
+import { redirect } from "next/navigation";
 import { CalendarClock, Users, Wallet, Repeat, MessageSquare, Bell } from "lucide-react";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { TrustNote } from "@/components/trust-note";
 import { OverviewCard } from "@/components/oggi/overview-card";
+import { createClient } from "@/lib/supabase/server";
 import {
   appuntamentiOggi,
   clienti,
@@ -12,7 +14,18 @@ import {
   promemoria,
 } from "@/lib/mock-data";
 
-export default function OggiPage() {
+export default async function OggiPage() {
+  const supabase = await createClient();
+  const { data: membership } = await supabase
+    .from("business_members")
+    .select("business_id")
+    .limit(1)
+    .maybeSingle();
+
+  if (!membership) {
+    redirect("/nuova-attivita");
+  }
+
   const clientiDaRichiamare = clienti.filter(
     (c) => c.stato === "Da ricontattare"
   );
