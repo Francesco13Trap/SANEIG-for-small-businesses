@@ -3,8 +3,11 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { buildAuthDebug, type AuthDebugInfo } from "@/lib/auth-debug";
 
-export type SignupState = { error?: string; success?: string } | undefined;
+export type SignupState =
+  | { error?: string; success?: string; debug?: AuthDebugInfo }
+  | undefined;
 
 export async function signup(
   _prevState: SignupState,
@@ -15,10 +18,24 @@ export async function signup(
   const password = String(formData.get("password") ?? "");
 
   if (!fullName || !email || !password) {
-    return { error: "Compila tutti i campi." };
+    return {
+      error: "Compila tutti i campi.",
+      debug: buildAuthDebug(
+        "signup",
+        "Validazione modulo",
+        "Campi obbligatori mancanti.",
+      ),
+    };
   }
   if (password.length < 8) {
-    return { error: "Password troppo corta. Usa almeno 8 caratteri." };
+    return {
+      error: "Password troppo corta. Usa almeno 8 caratteri.",
+      debug: buildAuthDebug(
+        "signup",
+        "Validazione modulo",
+        "Password sotto la lunghezza minima richiesta.",
+      ),
+    };
   }
 
   const supabase = await createClient();
@@ -29,24 +46,22 @@ export async function signup(
   });
 
   if (error) {
-    if (process.env.NODE_ENV !== "production") {
-      console.error(
-        "[signup] signUp error:",
-        error.code,
-        error.status,
-        error.message,
-      );
-    }
+    const debug = buildAuthDebug(
+      "signup",
+      "Supabase signUp",
+      error.message,
+      error.code ?? (error.status ? String(error.status) : undefined),
+    );
 
     if (error.code === "user_already_exists" || error.code === "email_exists") {
-      return { error: "Email già registrata. Prova ad accedere." };
+      return { error: "Email già registrata. Prova ad accedere.", debug };
     }
 
     if (error.code === "weak_password") {
-      return { error: "Password troppo corta. Usa almeno 8 caratteri." };
+      return { error: "Password troppo corta. Usa almeno 8 caratteri.", debug };
     }
 
-    return { error: "Non è stato possibile creare l'account. Riprova." };
+    return { error: "Non è stato possibile creare l'account. Riprova.", debug };
   }
 
   // Supabase returns a "fake" successful user with no identities when the
@@ -54,6 +69,11 @@ export async function signup(
   if (data.user && data.user.identities && data.user.identities.length === 0) {
     return {
       error: "Email già registrata. Prova ad accedere.",
+      debug: buildAuthDebug(
+        "signup",
+        "Utente/sessione restituita da Supabase",
+        "Nessuna nuova identità: email già registrata.",
+      ),
     };
   }
 
