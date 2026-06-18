@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LocalFlow",
+  title: "Saneig for Small Business",
   description:
-    "LocalFlow ti aiuta a organizzare clienti, pagamenti, abbonamenti e scadenze della tua attività.",
+    "Saneig ti aiuta a organizzare clienti, pagamenti, abbonamenti e scadenze della tua attività.",
 };
 
 export default function RootLayout({

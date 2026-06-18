@@ -17,7 +17,7 @@ export function MobileHeader() {
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-border bg-card px-4 md:hidden">
-      <span className="text-lg font-semibold text-foreground">LocalFlow</span>
+      <span className="text-lg font-semibold text-foreground">Saneig</span>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
           <Button variant="outline" size="icon" aria-label="Apri il menu">
@@ -26,7 +26,7 @@ export function MobileHeader() {
         </SheetTrigger>
         <SheetContent>
           <div className="flex h-16 items-center border-b border-border px-5">
-            <SheetTitle>LocalFlow</SheetTitle>
+            <SheetTitle>Saneig</SheetTitle>
           </div>
           <div className="flex-1 overflow-y-auto p-3">
             <NavList onNavigate={() => setOpen(false)} />

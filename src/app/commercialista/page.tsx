@@ -77,7 +77,7 @@ export default function CommercialistaPage() {
 
       <div className="flex flex-col gap-1.5 rounded-xl border border-border bg-card p-4">
         <TrustNote>Questo riepilogo serve solo per organizzarti.</TrustNote>
-        <TrustNote>LocalFlow non sostituisce il commercialista.</TrustNote>
+        <TrustNote>Saneig non sostituisce il commercialista.</TrustNote>
       </div>
     </div>
   );

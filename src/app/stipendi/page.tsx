@@ -19,7 +19,7 @@ export default function StipendiPage() {
       </Card>
 
       <TrustNote className="mt-6">
-        LocalFlow non sostituisce il commercialista.
+        Saneig non sostituisce il commercialista.
       </TrustNote>
     </div>
   );

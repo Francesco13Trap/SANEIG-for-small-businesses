@@ -115,7 +115,7 @@ export default function IvaEIncassiPage() {
         <TrustNote>
           Prima di usarlo fiscalmente, controllalo con il commercialista.
         </TrustNote>
-        <TrustNote>LocalFlow non sostituisce il commercialista.</TrustNote>
+        <TrustNote>Saneig non sostituisce il commercialista.</TrustNote>
       </div>
     </div>
   );
