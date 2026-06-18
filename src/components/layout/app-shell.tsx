@@ -7,7 +7,12 @@ import { MobileHeader } from "@/components/layout/mobile-header";
 
 // Auth pages render without the sidebar/header chrome — there is no
 // signed-in business to navigate yet.
-const NO_CHROME_PATHS = ["/accedi", "/registrati", "/nuova-attivita"];
+const NO_CHROME_PATHS = [
+  "/accedi",
+  "/registrati",
+  "/nuova-attivita",
+  "/configurazione-mancante",
+];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
