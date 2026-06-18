@@ -24,14 +24,43 @@ export async function login(
   });
 
   if (error) {
-    return { error: "Email o password non corrette." };
+    if (process.env.NODE_ENV !== "production") {
+      console.error(
+        "[login] signInWithPassword error:",
+        error.code,
+        error.status,
+        error.message,
+      );
+    }
+
+    if (error.code === "email_not_confirmed") {
+      return {
+        error: "Email non confermata. Controlla la tua casella di posta.",
+      };
+    }
+
+    return { error: "Email o password non corretti." };
   }
 
-  const { data: membership } = await supabase
+  const { data: membership, error: membershipError } = await supabase
     .from("business_members")
     .select("business_id")
     .limit(1)
     .maybeSingle();
+
+  if (membershipError) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error(
+        "[login] business_members lookup error:",
+        membershipError.message,
+      );
+    }
+
+    return {
+      error:
+        "Accesso riuscito, ma non è stato possibile caricare i dati dell'attività.",
+    };
+  }
 
   redirect(membership ? "/" : "/nuova-attivita");
 }

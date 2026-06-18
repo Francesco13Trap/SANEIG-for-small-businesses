@@ -18,7 +18,7 @@ export async function signup(
     return { error: "Compila tutti i campi." };
   }
   if (password.length < 8) {
-    return { error: "La password deve avere almeno 8 caratteri." };
+    return { error: "Password troppo corta. Usa almeno 8 caratteri." };
   }
 
   const supabase = await createClient();
@@ -29,6 +29,23 @@ export async function signup(
   });
 
   if (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error(
+        "[signup] signUp error:",
+        error.code,
+        error.status,
+        error.message,
+      );
+    }
+
+    if (error.code === "user_already_exists" || error.code === "email_exists") {
+      return { error: "Email già registrata. Prova ad accedere." };
+    }
+
+    if (error.code === "weak_password") {
+      return { error: "Password troppo corta. Usa almeno 8 caratteri." };
+    }
+
     return { error: "Non è stato possibile creare l'account. Riprova." };
   }
 
@@ -36,7 +53,7 @@ export async function signup(
   // email is already registered, to avoid leaking which emails exist.
   if (data.user && data.user.identities && data.user.identities.length === 0) {
     return {
-      error: "Questo indirizzo email è già registrato. Vai alla pagina di accesso.",
+      error: "Email già registrata. Prova ad accedere.",
     };
   }
 
