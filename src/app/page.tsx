@@ -14,6 +14,10 @@ import {
   promemoria,
 } from "@/lib/mock-data";
 
+// Reads the session via Supabase on every request — must never be
+// prerendered at build time, when env vars/cookies aren't available.
+export const dynamic = "force-dynamic";
+
 export default async function OggiPage() {
   const supabase = await createClient();
   const { data: membership } = await supabase
