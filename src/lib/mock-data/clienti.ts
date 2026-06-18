@@ -1,0 +1,68 @@
+import type { Cliente } from "@/lib/types";
+
+export const clienti: Cliente[] = [
+  {
+    id: "c1",
+    nome: "Marco Rossi",
+    telefono: "333 1234567",
+    ultimoContatto: "15 giugno 2026",
+    stato: "Abituale",
+    nota: "Preferisce il sabato mattina.",
+  },
+  {
+    id: "c2",
+    nome: "Giulia Bianchi",
+    telefono: "347 9876543",
+    ultimoContatto: "10 giugno 2026",
+    stato: "Da ricontattare",
+    nota: "Non si presenta da un mese.",
+  },
+  {
+    id: "c3",
+    nome: "Luca Ferrari",
+    telefono: "320 5551234",
+    ultimoContatto: "17 giugno 2026",
+    stato: "Nuovo",
+    nota: "Primo appuntamento fatto bene, valutare promemoria.",
+  },
+  {
+    id: "c4",
+    nome: "Anna Colombo",
+    telefono: "338 2223344",
+    ultimoContatto: "1 giugno 2026",
+    stato: "Da ricontattare",
+    nota: "Abbonamento scaduto, non rinnovato.",
+  },
+  {
+    id: "c5",
+    nome: "Paolo Greco",
+    telefono: "366 7778899",
+    ultimoContatto: "16 giugno 2026",
+    stato: "Abituale",
+    nota: "Cliente storico, paga sempre in contanti.",
+  },
+  {
+    id: "c6",
+    nome: "Sara Esposito",
+    telefono: "349 4445566",
+    ultimoContatto: "12 giugno 2026",
+    stato: "Abituale",
+    nota: "Chiede sempre lo stesso orario, ore 18.",
+  },
+  {
+    id: "c7",
+    nome: "Davide Romano",
+    telefono: "328 1112233",
+    ultimoContatto: "5 giugno 2026",
+    stato: "Da ricontattare",
+    nota: "Ha chiesto un preventivo, non ha risposto.",
+  },
+  {
+    id: "c8",
+    nome: "Chiara Marini",
+    telefono: "351 6667788",
+    ultimoContatto: "18 giugno 2026",
+    stato: "Nuovo",
+    nota: "Arrivata tramite passaparola.",
+  },
+];
