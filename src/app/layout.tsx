@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Saneig for Small Business",
+  title: "Impresa Viva",
   description:
-    "Saneig ti aiuta a organizzare clienti, pagamenti, abbonamenti e scadenze della tua attività.",
+    "Impresa Viva ti aiuta a organizzare clienti, pagamenti, abbonamenti e scadenze della tua attività.",
 };
 
 export default function RootLayout({

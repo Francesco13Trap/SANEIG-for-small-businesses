@@ -19,7 +19,7 @@ export default function StipendiPage() {
       </Card>
 
       <TrustNote className="mt-6">
-        Saneig non sostituisce il commercialista.
+        Impresa Viva non sostituisce il commercialista.
       </TrustNote>
     </div>
   );
