@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login } from "@/app/accedi/actions";
-import { AuthDebugPanel } from "@/components/auth-debug-panel";
 
 export function LoginForm() {
   const [state, formAction, pending] = useActionState(login, undefined);
@@ -35,9 +34,6 @@ export function LoginForm() {
       </div>
       {state?.error && (
         <p className="text-sm text-destructive">{state.error}</p>
-      )}
-      {state?.debug && (
-        <AuthDebugPanel title="Errore accesso" debug={state.debug} />
       )}
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Accesso in corso..." : "Accedi"}

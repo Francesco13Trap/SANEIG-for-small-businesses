@@ -3,9 +3,8 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
-import { buildAuthDebug, type AuthDebugInfo } from "@/lib/auth-debug";
 
-export type LoginState = { error?: string; debug?: AuthDebugInfo } | undefined;
+export type LoginState = { error?: string } | undefined;
 
 export async function login(
   _prevState: LoginState,
@@ -15,14 +14,7 @@ export async function login(
   const password = String(formData.get("password") ?? "");
 
   if (!email || !password) {
-    return {
-      error: "Inserisci email e password.",
-      debug: buildAuthDebug(
-        "login",
-        "Validazione modulo",
-        "Email o password mancanti.",
-      ),
-    };
+    return { error: "Inserisci email e password." };
   }
 
   const supabase = await createClient();
@@ -32,32 +24,25 @@ export async function login(
   });
 
   if (error) {
-    const debug = buildAuthDebug(
-      "login",
-      "Supabase signInWithPassword",
-      error.message,
-      error.code ?? (error.status ? String(error.status) : undefined),
-    );
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[login] signInWithPassword error:", error.code, error.message);
+    }
 
     if (error.code === "email_not_confirmed") {
       return {
         error: "Email non confermata. Controlla la tua casella di posta.",
-        debug,
       };
     }
 
-    return { error: "Email o password non corretti.", debug };
+    return { error: "Email o password non corretti." };
   }
 
   if (!data.session) {
-    return {
-      error: "Email o password non corretti.",
-      debug: buildAuthDebug(
-        "login",
-        "Sessione restituita da Supabase",
-        "signInWithPassword non ha restituito una sessione.",
-      ),
-    };
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[login] signInWithPassword non ha restituito una sessione.");
+    }
+
+    return { error: "Non è stato possibile completare l'accesso. Riprova." };
   }
 
   const { data: membership, error: membershipError } = await supabase
@@ -67,16 +52,11 @@ export async function login(
     .maybeSingle();
 
   if (membershipError) {
-    return {
-      error:
-        "Accesso riuscito, ma non è stato possibile caricare i dati dell'attività.",
-      debug: buildAuthDebug(
-        "login",
-        "Caricamento attività (business_members)",
-        membershipError.message,
-        membershipError.code,
-      ),
-    };
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[login] business_members lookup error:", membershipError.message);
+    }
+
+    return { error: "Non è stato possibile completare l'accesso. Riprova." };
   }
 
   redirect(membership ? "/" : "/nuova-attivita");
