@@ -12,6 +12,8 @@ const NO_CHROME_PATHS = [
   "/registrati",
   "/nuova-attivita",
   "/configurazione-mancante",
+  "/password-dimenticata",
+  "/nuova-password",
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {

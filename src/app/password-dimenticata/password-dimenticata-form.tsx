@@ -2,15 +2,16 @@
 
 import { useActionState } from "react";
 
-import Link from "next/link";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { login } from "@/app/accedi/actions";
+import { requestPasswordReset } from "@/app/password-dimenticata/actions";
 
-export function LoginForm() {
-  const [state, formAction, pending] = useActionState(login, undefined);
+export function PasswordDimenticataForm() {
+  const [state, formAction, pending] = useActionState(
+    requestPasswordReset,
+    undefined,
+  );
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -24,27 +25,14 @@ export function LoginForm() {
           required
         />
       </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-        />
-        <Link
-          href="/password-dimenticata"
-          className="self-end text-sm font-medium text-primary hover:underline"
-        >
-          Password dimenticata?
-        </Link>
-      </div>
       {state?.error && (
         <p className="text-sm text-destructive">{state.error}</p>
       )}
+      {state?.success && (
+        <p className="text-sm text-success">{state.success}</p>
+      )}
       <Button type="submit" disabled={pending} className="w-full">
-        {pending ? "Accesso in corso..." : "Accedi"}
+        {pending ? "Invio in corso..." : "Invia link"}
       </Button>
     </form>
   );

@@ -4,6 +4,11 @@ import type { NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
 
 const PUBLIC_PATHS = ["/accedi", "/registrati"];
+const PASSWORD_RESET_PATHS = [
+  "/password-dimenticata",
+  "/nuova-password",
+  "/auth/confirm",
+];
 const CONFIG_MISSING_PATH = "/configurazione-mancante";
 
 export async function proxy(request: NextRequest) {
@@ -17,8 +22,11 @@ export async function proxy(request: NextRequest) {
   }
 
   const isPublicPath = PUBLIC_PATHS.includes(request.nextUrl.pathname);
+  const isPasswordResetPath = PASSWORD_RESET_PATHS.includes(
+    request.nextUrl.pathname,
+  );
 
-  if (!user && !isPublicPath) {
+  if (!user && !isPublicPath && !isPasswordResetPath) {
     return NextResponse.redirect(new URL("/accedi", request.url));
   }
 
