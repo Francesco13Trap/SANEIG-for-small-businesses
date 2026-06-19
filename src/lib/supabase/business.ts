@@ -1,0 +1,16 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+// Every real-data section needs to know which business the logged-in user
+// is currently acting for. For now a user belongs to a single business, so
+// the first membership row is the active one.
+export async function getActiveBusinessId(
+  supabase: SupabaseClient,
+): Promise<string | null> {
+  const { data } = await supabase
+    .from("business_members")
+    .select("business_id")
+    .limit(1)
+    .maybeSingle();
+
+  return data?.business_id ?? null;
+}
