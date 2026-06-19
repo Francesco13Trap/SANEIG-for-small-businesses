@@ -5,7 +5,9 @@ import { PageHeader } from "@/components/layout/page-header";
 import { TrustNote } from "@/components/trust-note";
 import { OverviewCard } from "@/components/oggi/overview-card";
 import { PriorityCard } from "@/components/oggi/priority-card";
+import { SuggestedActionsCard } from "@/components/oggi/suggested-actions-card";
 import { getPriorityItem } from "@/lib/oggi/priority";
+import { getSuggestedActions } from "@/lib/oggi/suggested-actions";
 import { createClient } from "@/lib/supabase/server";
 import {
   appuntamentiOggi,
@@ -52,6 +54,15 @@ export default async function OggiPage() {
     azioniConsigliate: riepilogoSettimana.prossimeAzioni,
   });
 
+  const suggestedActions = getSuggestedActions({
+    pagamentiDaControllare,
+    promemoriaImportanti,
+    abbonamentiInScadenza,
+    messaggi,
+    azioniConsigliate: riepilogoSettimana.prossimeAzioni,
+    excludeHref: priorityItem?.href,
+  });
+
   const oggi = new Intl.DateTimeFormat("it-IT", {
     day: "numeric",
     month: "long",
@@ -63,6 +74,8 @@ export default async function OggiPage() {
       <PageHeader title="Oggi" description={`Buongiorno, oggi è ${oggi}.`} />
 
       <PriorityCard item={priorityItem} />
+
+      <SuggestedActionsCard actions={suggestedActions} />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <OverviewCard
