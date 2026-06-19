@@ -5,6 +5,7 @@ import { useId, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AliquotaSelect } from "@/components/iva/aliquota-select";
+import { TrustNote } from "@/components/trust-note";
 
 function formatEuro(value: number) {
   return value.toLocaleString("it-IT", {
@@ -47,19 +48,25 @@ export function IvaCalculator() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-lg bg-secondary p-4">
-          <p className="text-sm text-muted-foreground">IVA</p>
-          <p className="text-xl font-semibold text-foreground">
-            {formatEuro(iva)} €
-          </p>
+      <div className="flex flex-col gap-2">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-lg bg-secondary p-4">
+            <p className="text-sm text-muted-foreground">IVA</p>
+            <p className="text-xl font-semibold text-foreground">
+              {formatEuro(iva)} €
+            </p>
+          </div>
+          <div className="rounded-lg bg-secondary p-4">
+            <p className="text-sm text-muted-foreground">Totale</p>
+            <p className="text-xl font-semibold text-foreground">
+              {formatEuro(totale)} €
+            </p>
+          </div>
         </div>
-        <div className="rounded-lg bg-secondary p-4">
-          <p className="text-sm text-muted-foreground">Totale</p>
-          <p className="text-xl font-semibold text-foreground">
-            {formatEuro(totale)} €
-          </p>
-        </div>
+        <TrustNote>
+          Calcolo indicativo, utile solo per organizzarti. Per conferme
+          fiscali rivolgiti al commercialista.
+        </TrustNote>
       </div>
     </div>
   );

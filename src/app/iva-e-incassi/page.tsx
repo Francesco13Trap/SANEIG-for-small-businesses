@@ -111,9 +111,9 @@ export default function IvaEIncassiPage() {
       </Card>
 
       <div className="flex flex-col gap-1.5 rounded-xl border border-border bg-card p-4">
-        <TrustNote>Questo riepilogo serve solo per organizzarti.</TrustNote>
         <TrustNote>
-          Prima di usarlo fiscalmente, controllalo con il commercialista.
+          Questo riepilogo serve solo per organizzarti: prima di usarlo
+          fiscalmente, controllalo con il commercialista.
         </TrustNote>
         <TrustNote>Impresa Viva non sostituisce il commercialista.</TrustNote>
       </div>
