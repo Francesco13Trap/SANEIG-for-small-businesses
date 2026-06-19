@@ -4,6 +4,8 @@ import { CalendarClock, Users, Wallet, Repeat, MessageSquare, Bell } from "lucid
 import { PageHeader } from "@/components/layout/page-header";
 import { TrustNote } from "@/components/trust-note";
 import { OverviewCard } from "@/components/oggi/overview-card";
+import { PriorityCard } from "@/components/oggi/priority-card";
+import { getPriorityItem } from "@/lib/oggi/priority";
 import { createClient } from "@/lib/supabase/server";
 import {
   appuntamentiOggi,
@@ -12,6 +14,7 @@ import {
   abbonamenti,
   messaggi,
   promemoria,
+  riepilogoSettimana,
 } from "@/lib/mock-data";
 
 // Reads the session via Supabase on every request — must never be
@@ -41,12 +44,25 @@ export default async function OggiPage() {
   );
   const promemoriaImportanti = promemoria.filter((p) => p.importante);
 
+  const priorityItem = getPriorityItem({
+    pagamentiDaControllare,
+    promemoriaImportanti,
+    abbonamentiInScadenza,
+    messaggi,
+    azioniConsigliate: riepilogoSettimana.prossimeAzioni,
+  });
+
+  const oggi = new Intl.DateTimeFormat("it-IT", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
+
   return (
     <div>
-      <PageHeader
-        title="Oggi"
-        description="Ecco cosa conviene seguire oggi, in un solo colpo d'occhio."
-      />
+      <PageHeader title="Oggi" description={`Buongiorno, oggi è ${oggi}.`} />
+
+      <PriorityCard item={priorityItem} />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <OverviewCard
