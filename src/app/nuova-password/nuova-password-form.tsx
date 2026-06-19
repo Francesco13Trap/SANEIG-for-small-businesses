@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,20 @@ export function NuovaPasswordForm() {
     updatePassword,
     undefined,
   );
+
+  if (state?.success) {
+    return (
+      <div className="flex flex-col gap-4">
+        <p className="text-sm text-success">{state.success}</p>
+        <Link
+          href="/accedi"
+          className="text-sm font-medium text-primary hover:underline"
+        >
+          Vai ad accedere
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <form action={formAction} className="flex flex-col gap-4">

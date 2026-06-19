@@ -1,10 +1,10 @@
 "use server";
 
-import { redirect } from "next/navigation";
-
 import { createClient } from "@/lib/supabase/server";
 
-export type UpdatePasswordState = { error?: string } | undefined;
+export type UpdatePasswordState =
+  | { error?: string; success?: string }
+  | undefined;
 
 export async function updatePassword(
   _prevState: UpdatePasswordState,
@@ -37,5 +37,6 @@ export async function updatePassword(
   }
 
   await supabase.auth.signOut();
-  redirect("/accedi");
+
+  return { success: "Password aggiornata. Ora puoi accedere." };
 }
