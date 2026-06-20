@@ -18,13 +18,21 @@ export async function requestPasswordReset(
     return { error: "Inserisci un'email valida." };
   }
 
-  const headersList = await headers();
-  const host = headersList.get("host") ?? "";
-  const proto = headersList.get("x-forwarded-proto") ?? "http";
+  // NEXT_PUBLIC_APP_URL lets the deployment pin one stable origin (the one
+  // registered in Supabase's Redirect URLs); falls back to this request's
+  // own host when it isn't set.
+  const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+  let origin = configuredAppUrl;
+  if (!origin) {
+    const headersList = await headers();
+    const host = headersList.get("host") ?? "";
+    const proto = headersList.get("x-forwarded-proto") ?? "http";
+    origin = `${proto}://${host}`;
+  }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${proto}://${host}/nuova-password`,
+    redirectTo: `${origin}/auth/confirm?next=${encodeURIComponent("/nuova-password")}`,
   });
 
   if (error) {

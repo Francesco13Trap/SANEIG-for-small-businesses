@@ -15,16 +15,33 @@ import { createClient } from "@/lib/supabase/client";
 
 type Status = "checking" | "valid" | "invalid";
 
-// Supabase can deliver the recovery session to this page in three different
-// ways depending on the email template/flow configuration: a URL hash
-// fragment (#access_token=...&refresh_token=...&type=recovery), a
-// ?token_hash=...&type=recovery query param, or a PKCE ?code= query param
-// (handled automatically by the client on init). All three must be checked
-// before deciding the link is invalid.
+// Generous timeout: never flash "invalid" while Supabase is still
+// processing the link. Only declare it dead once nothing has resolved a
+// session by then.
+const RECOVERY_TIMEOUT_MS = 8000;
+
+// By the time the browser reaches this page, /auth/confirm has normally
+// already exchanged the link for a session server-side, so a session
+// already exists in cookies. The checks below remain as a safety net for
+// links generated before that route existed and for the implicit hash-token
+// flow, which only the browser can read (the fragment never reaches the
+// server).
+// /auth/confirm redirects here with ?error=... when it couldn't exchange
+// the link; Supabase's own hosted verify endpoint can also add an error
+// param directly for an expired/already-used link.
+function hasErrorParam(): boolean {
+  if (typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).has("error");
+}
+
 function useRecoverySession(): Status {
-  const [status, setStatus] = useState<Status>("checking");
+  const [status, setStatus] = useState<Status>(() =>
+    hasErrorParam() ? "invalid" : "checking",
+  );
 
   useEffect(() => {
+    if (hasErrorParam()) return;
+
     const supabase = createClient();
     let settled = false;
 
@@ -33,6 +50,8 @@ function useRecoverySession(): Status {
       settled = true;
       setStatus(valid ? "valid" : "invalid");
     };
+
+    const timeoutId = window.setTimeout(() => settle(false), RECOVERY_TIMEOUT_MS);
 
     async function checkRecoveryLink() {
       const hashParams = new URLSearchParams(window.location.hash.slice(1));
@@ -45,7 +64,7 @@ function useRecoverySession(): Status {
           access_token: accessToken,
           refresh_token: refreshToken,
         });
-        settle(!error && !!data.session);
+        if (!error && data.session) settle(true);
         return;
       }
 
@@ -58,26 +77,33 @@ function useRecoverySession(): Status {
           type: "recovery",
           token_hash: tokenHash,
         });
-        settle(!error && !!data.session);
+        if (!error && data.session) settle(true);
         return;
       }
 
-      // No hash/token_hash in the URL: covers a PKCE `code` query param
-      // (exchanged automatically by the client on init) and the case of an
-      // already-active session.
+      // No token in the URL: either a session already exists (the normal
+      // case after /auth/confirm) or a legacy PKCE `?code=` link is still
+      // being exchanged automatically by the client on init.
       const { data } = await supabase.auth.getSession();
-      settle(!!data.session);
+      if (data.session) settle(true);
     }
 
     checkRecoveryLink();
 
+    // PKCE code exchanges resolve as a plain SIGNED_IN event, not
+    // PASSWORD_RECOVERY — both must be treated as a valid recovery session
+    // on this page, since it's only ever reachable from a reset-password
+    // link.
     const { data: listener } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
+      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
         settle(true);
       }
     });
 
-    return () => listener.subscription.unsubscribe();
+    return () => {
+      window.clearTimeout(timeoutId);
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   return status;
@@ -90,7 +116,7 @@ export function RecoveryCheck() {
     return (
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Verifica del link in corso…</CardTitle>
+          <CardTitle>Controllo del link in corso…</CardTitle>
         </CardHeader>
       </Card>
     );
@@ -102,7 +128,7 @@ export function RecoveryCheck() {
         <CardHeader>
           <CardTitle>Link non valido</CardTitle>
           <CardDescription>
-            Link non valido o scaduto. Richiedi un nuovo link.
+            Il link non è valido o è scaduto. Richiedi un nuovo link.
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -4,7 +4,14 @@ import type { NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
 
 const PUBLIC_PATHS = ["/accedi", "/registrati"];
-const PASSWORD_RESET_PATHS = ["/password-dimenticata", "/nuova-password"];
+// /auth/confirm exchanges the recovery link for a session before the user
+// has any cookie-based session at all, so it must stay reachable like the
+// rest of the password-reset flow.
+const PASSWORD_RESET_PATHS = [
+  "/password-dimenticata",
+  "/nuova-password",
+  "/auth/confirm",
+];
 const CONFIG_MISSING_PATH = "/configurazione-mancante";
 
 export async function proxy(request: NextRequest) {
