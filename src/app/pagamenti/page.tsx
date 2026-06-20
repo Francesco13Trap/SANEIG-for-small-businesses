@@ -1,19 +1,44 @@
+import { redirect } from "next/navigation";
+
 import { PageHeader } from "@/components/layout/page-header";
 import { TrustNote } from "@/components/trust-note";
-import { StatusBadge } from "@/components/status-badge";
-import { CopyMessageButton } from "@/components/copy-message-button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { pagamenti } from "@/lib/mock-data";
+import { PagamentoFormDialog } from "@/components/pagamenti/pagamento-form-dialog";
+import { PagamentiTable } from "@/components/pagamenti/pagamenti-table";
+import { getActiveBusinessId } from "@/lib/supabase/business";
+import { createClient } from "@/lib/supabase/server";
+import { mapPagamentoRow, type PagamentoRow } from "@/lib/pagamenti/types";
 
-export default function PagamentiPage() {
+// Reads the session and the payments list via Supabase on every request —
+// must never be prerendered at build time, when env vars/cookies aren't
+// available.
+export const dynamic = "force-dynamic";
+
+export default async function PagamentiPage() {
+  const supabase = await createClient();
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    redirect("/nuova-attivita");
+  }
+
+  const [paymentsResult, clientsResult] = await Promise.all([
+    supabase
+      .from("payments")
+      .select("id, client_id, amount, due_date, status, created_at, updated_at, clients(name)")
+      .eq("business_id", businessId)
+      .order("due_date", { ascending: true }),
+    supabase
+      .from("clients")
+      .select("id, name")
+      .eq("business_id", businessId)
+      .order("name", { ascending: true }),
+  ]);
+
+  const { data, error } = paymentsResult;
+  const pagamenti = ((data as PagamentoRow[]) ?? []).map(mapPagamentoRow);
+  const clienti = (clientsResult.data ?? []).map((c) => ({ id: c.id, nome: c.name }));
+
   return (
     <div>
       <PageHeader
@@ -21,44 +46,37 @@ export default function PagamentiPage() {
         description="I pagamenti da controllare o da sollecitare ai clienti."
       />
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="pl-5">Cliente</TableHead>
-                <TableHead>Importo</TableHead>
-                <TableHead>Scadenza</TableHead>
-                <TableHead>Stato</TableHead>
-                <TableHead className="pr-5 text-right">Azione</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pagamenti.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="pl-5 font-medium text-foreground">
-                    {p.cliente}
-                  </TableCell>
-                  <TableCell className="text-foreground">
-                    {p.importo} €
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {p.scadenza}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={p.stato} />
-                  </TableCell>
-                  <TableCell className="pr-5 text-right">
-                    <CopyMessageButton
-                      message={`Ciao ${p.cliente}, ti scrivo solo per ricordarti il pagamento di ${p.importo} € relativo al ${p.scadenza}. Fammi sapere quando ti è comodo, grazie!`}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {error ? (
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm text-destructive">
+              Non è stato possibile caricare i pagamenti.
+            </p>
+          </CardContent>
+        </Card>
+      ) : pagamenti.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-start gap-4 p-6">
+            <div className="flex flex-col gap-1">
+              <p className="font-medium text-foreground">
+                Nessun pagamento salvato.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Aggiungi il primo pagamento per iniziare a tenere sotto
+                controllo gli incassi.
+              </p>
+            </div>
+            <PagamentoFormDialog mode="add" clienti={clienti} />
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-end">
+            <PagamentoFormDialog mode="add" clienti={clienti} />
+          </div>
+          <PagamentiTable pagamenti={pagamenti} clienti={clienti} />
+        </div>
+      )}
 
       <TrustNote className="mt-6">
         Nessun messaggio viene inviato senza conferma.
