@@ -6,21 +6,26 @@ import { TrustNote } from "@/components/trust-note";
 import { OverviewCard } from "@/components/oggi/overview-card";
 import { PriorityCard } from "@/components/oggi/priority-card";
 import { SuggestedActionsCard } from "@/components/oggi/suggested-actions-card";
+import { getPaymentWarnings } from "@/lib/oggi/payment-warnings";
 import { getPriorityItem } from "@/lib/oggi/priority";
 import { getSuggestedActions } from "@/lib/oggi/suggested-actions";
 import { createClient } from "@/lib/supabase/server";
 import {
+  formatImporto,
+  mapPagamentoRow,
+  type PagamentoRow,
+} from "@/lib/pagamenti/types";
+import {
   appuntamentiOggi,
   clienti,
-  pagamenti,
   abbonamenti,
   messaggi,
   promemoria,
-  riepilogoSettimana,
 } from "@/lib/mock-data";
 
-// Reads the session via Supabase on every request — must never be
-// prerendered at build time, when env vars/cookies aren't available.
+// Reads the session and real payments via Supabase on every request — must
+// never be prerendered at build time, when env vars/cookies aren't
+// available.
 export const dynamic = "force-dynamic";
 
 export default async function OggiPage() {
@@ -35,33 +40,33 @@ export default async function OggiPage() {
     redirect("/nuova-attivita");
   }
 
+  // Errors fall back to an empty list rather than surfacing a raw Supabase
+  // error: Oggi's cards already have a clean "no warnings" state for that.
+  const { data: paymentsData } = await supabase
+    .from("payments")
+    .select("id, client_id, amount, due_date, status, created_at, updated_at, clients(name)")
+    .eq("business_id", membership.business_id)
+    .neq("status", "paid")
+    .order("due_date", { ascending: true });
+
+  const pagamentiNonPagati = ((paymentsData as PagamentoRow[]) ?? []).map(
+    mapPagamentoRow,
+  );
+  const paymentWarnings = getPaymentWarnings(pagamentiNonPagati);
+  const pagamentiDaControllare = pagamentiNonPagati.filter(
+    (p) => p.stato === "to_check" || p.stato === "to_remind",
+  );
+
   const clientiDaRichiamare = clienti.filter(
     (c) => c.stato === "Da ricontattare"
-  );
-  const pagamentiDaControllare = pagamenti.filter(
-    (p) => p.stato === "Da controllare" || p.stato === "Da sollecitare"
   );
   const abbonamentiInScadenza = abbonamenti.filter(
     (a) => a.stato === "In scadenza" || a.stato === "Da rinnovare"
   );
   const promemoriaImportanti = promemoria.filter((p) => p.importante);
 
-  const priorityItem = getPriorityItem({
-    pagamentiDaControllare,
-    promemoriaImportanti,
-    abbonamentiInScadenza,
-    messaggi,
-    azioniConsigliate: riepilogoSettimana.prossimeAzioni,
-  });
-
-  const suggestedActions = getSuggestedActions({
-    pagamentiDaControllare,
-    promemoriaImportanti,
-    abbonamentiInScadenza,
-    messaggi,
-    azioniConsigliate: riepilogoSettimana.prossimeAzioni,
-    excludeHref: priorityItem?.href,
-  });
+  const priorityItem = getPriorityItem(paymentWarnings);
+  const suggestedActions = getSuggestedActions(paymentWarnings);
 
   const oggi = new Intl.DateTimeFormat("it-IT", {
     day: "numeric",
@@ -121,7 +126,7 @@ export default async function OggiPage() {
           {pagamentiDaControllare.map((p) => (
             <li key={p.id} className="flex items-center justify-between gap-3">
               <span className="text-foreground">{p.cliente}</span>
-              <span className="text-muted-foreground">{p.importo} €</span>
+              <span className="text-muted-foreground">{formatImporto(p.importo)} €</span>
             </li>
           ))}
         </OverviewCard>

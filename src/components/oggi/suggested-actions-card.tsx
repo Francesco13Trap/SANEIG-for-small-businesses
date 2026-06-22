@@ -27,7 +27,7 @@ export function SuggestedActionsCard({
         {actions.length > 0 ? (
           <ul className="flex flex-col gap-2">
             {actions.map((action) => (
-              <li key={action.href}>
+              <li key={action.id}>
                 <Link
                   href={action.href}
                   className="flex items-center justify-between gap-3 rounded-lg bg-secondary px-3 py-2.5 text-sm text-foreground transition-colors hover:bg-secondary/70"
