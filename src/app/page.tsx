@@ -9,7 +9,9 @@ import { SuggestedActionsCard } from "@/components/oggi/suggested-actions-card";
 import { isDemoAccount } from "@/lib/oggi/demo-account";
 import { getPaymentWarnings } from "@/lib/oggi/payment-warnings";
 import { getPriorityItem } from "@/lib/oggi/priority";
+import { getSubscriptionWarnings } from "@/lib/oggi/subscription-warnings";
 import { getSuggestedActions } from "@/lib/oggi/suggested-actions";
+import { buildOggiWarnings } from "@/lib/oggi/warnings";
 import { createClient } from "@/lib/supabase/server";
 import {
   formatImporto,
@@ -17,12 +19,11 @@ import {
   type PagamentoRow,
 } from "@/lib/pagamenti/types";
 import {
-  appuntamentiOggi,
-  clienti,
-  abbonamenti,
-  messaggi,
-  promemoria,
-} from "@/lib/mock-data";
+  formatData as formatDataAbbonamento,
+  mapAbbonamentoRow,
+  type AbbonamentoRow,
+} from "@/lib/abbonamenti/types";
+import { appuntamentiOggi, clienti, messaggi, promemoria } from "@/lib/mock-data";
 
 // Reads the session and real payments via Supabase on every request — must
 // never be prerendered at build time, when env vars/cookies aren't
@@ -48,19 +49,37 @@ export default async function OggiPage() {
 
   // Errors fall back to an empty list rather than surfacing a raw Supabase
   // error: Oggi's cards already have a clean "no warnings" state for that.
-  const { data: paymentsData } = await supabase
-    .from("payments")
-    .select("id, client_id, amount, due_date, status, created_at, updated_at, clients(name)")
-    .eq("business_id", membership.business_id)
-    .neq("status", "paid")
-    .order("due_date", { ascending: true });
+  const [paymentsResult, subscriptionsResult] = await Promise.all([
+    supabase
+      .from("payments")
+      .select("id, client_id, amount, due_date, status, created_at, updated_at, clients(name)")
+      .eq("business_id", membership.business_id)
+      .neq("status", "paid")
+      .order("due_date", { ascending: true }),
+    supabase
+      .from("subscriptions")
+      .select(
+        "id, client_id, name, start_date, expiry_date, status, note, created_at, updated_at, clients(name)",
+      )
+      .eq("business_id", membership.business_id)
+      .neq("status", "cancelled")
+      .order("expiry_date", { ascending: true }),
+  ]);
 
-  const pagamentiNonPagati = ((paymentsData as PagamentoRow[]) ?? []).map(
+  const pagamentiNonPagati = ((paymentsResult.data as PagamentoRow[]) ?? []).map(
     mapPagamentoRow,
   );
   const paymentWarnings = getPaymentWarnings(pagamentiNonPagati);
   const pagamentiDaControllare = pagamentiNonPagati.filter(
     (p) => p.stato === "to_check" || p.stato === "to_remind",
+  );
+
+  const abbonamentiAttivi = ((subscriptionsResult.data as AbbonamentoRow[]) ?? []).map(
+    mapAbbonamentoRow,
+  );
+  const subscriptionWarnings = getSubscriptionWarnings(abbonamentiAttivi);
+  const abbonamentiInScadenza = abbonamentiAttivi.filter(
+    (a) => a.stato === "expiring",
   );
 
   // Appuntamenti and "clienti da richiamare" have no real data behind them
@@ -70,13 +89,11 @@ export default async function OggiPage() {
   const clientiDaRichiamare = isDemo
     ? clienti.filter((c) => c.stato === "Da ricontattare")
     : [];
-  const abbonamentiInScadenza = abbonamenti.filter(
-    (a) => a.stato === "In scadenza" || a.stato === "Da rinnovare"
-  );
   const promemoriaImportanti = promemoria.filter((p) => p.importante);
 
-  const priorityItem = getPriorityItem(paymentWarnings);
-  const suggestedActions = getSuggestedActions(paymentWarnings);
+  const oggiWarnings = buildOggiWarnings(subscriptionWarnings, paymentWarnings);
+  const priorityItem = getPriorityItem(oggiWarnings);
+  const suggestedActions = getSuggestedActions(oggiWarnings);
 
   const oggi = new Intl.DateTimeFormat("it-IT", {
     day: "numeric",
@@ -152,7 +169,9 @@ export default async function OggiPage() {
           {abbonamentiInScadenza.map((a) => (
             <li key={a.id} className="flex items-center justify-between gap-3">
               <span className="text-foreground">{a.cliente}</span>
-              <span className="text-muted-foreground">{a.scadenza}</span>
+              <span className="text-muted-foreground">
+                {formatDataAbbonamento(a.scadenza)}
+              </span>
             </li>
           ))}
         </OverviewCard>

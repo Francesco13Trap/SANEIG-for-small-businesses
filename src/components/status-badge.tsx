@@ -16,6 +16,7 @@ const STATUS_VARIANT: Record<string, BadgeVariant> = {
   "In scadenza": "warning",
   Scaduto: "destructive",
   "Da rinnovare": "warning",
+  Annullato: "secondary",
 
   Attiva: "success",
   Programmata: "outline",
