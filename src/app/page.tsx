@@ -12,6 +12,7 @@ import { getPriorityItem } from "@/lib/oggi/priority";
 import { getSubscriptionWarnings } from "@/lib/oggi/subscription-warnings";
 import { getSuggestedActions } from "@/lib/oggi/suggested-actions";
 import { buildOggiWarnings } from "@/lib/oggi/warnings";
+import { getAbbonamentiMessages, getPagamentiMessages } from "@/lib/messaggi/reminders";
 import { createClient } from "@/lib/supabase/server";
 import {
   formatImporto,
@@ -23,7 +24,7 @@ import {
   mapAbbonamentoRow,
   type AbbonamentoRow,
 } from "@/lib/abbonamenti/types";
-import { appuntamentiOggi, clienti, messaggi, promemoria } from "@/lib/mock-data";
+import { appuntamentiOggi, clienti, promemoria } from "@/lib/mock-data";
 
 // Reads the session and real payments via Supabase on every request — must
 // never be prerendered at build time, when env vars/cookies aren't
@@ -90,6 +91,14 @@ export default async function OggiPage() {
     ? clienti.filter((c) => c.stato === "Da ricontattare")
     : [];
   const promemoriaImportanti = promemoria.filter((p) => p.importante);
+
+  // "Messaggi pronti" reuses the same real reminder text shown on /messaggi,
+  // so the count and preview here never drift from what the page itself
+  // generates.
+  const messaggiPronti = [
+    ...getPagamentiMessages(pagamentiNonPagati),
+    ...getAbbonamentiMessages(abbonamentiAttivi),
+  ];
 
   const oggiWarnings = buildOggiWarnings(subscriptionWarnings, paymentWarnings);
   const priorityItem = getPriorityItem(oggiWarnings);
@@ -179,14 +188,15 @@ export default async function OggiPage() {
         <OverviewCard
           title="Messaggi pronti"
           icon={MessageSquare}
-          count={messaggi.length}
+          count={messaggiPronti.length}
           href="/messaggi"
           ctaLabel="Apri Messaggi"
           emptyText="Nessun messaggio pronto."
         >
-          {messaggi.slice(0, 4).map((m) => (
-            <li key={m.id} className="text-foreground">
-              {m.titolo}
+          {messaggiPronti.slice(0, 4).map((m) => (
+            <li key={m.id} className="flex items-center justify-between gap-3">
+              <span className="text-foreground">{m.cliente}</span>
+              <span className="text-muted-foreground">{m.motivo}</span>
             </li>
           ))}
         </OverviewCard>
