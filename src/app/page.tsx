@@ -6,6 +6,7 @@ import { TrustNote } from "@/components/trust-note";
 import { OverviewCard } from "@/components/oggi/overview-card";
 import { PriorityCard } from "@/components/oggi/priority-card";
 import { SuggestedActionsCard } from "@/components/oggi/suggested-actions-card";
+import { isDemoAccount } from "@/lib/oggi/demo-account";
 import { getPaymentWarnings } from "@/lib/oggi/payment-warnings";
 import { getPriorityItem } from "@/lib/oggi/priority";
 import { getSuggestedActions } from "@/lib/oggi/suggested-actions";
@@ -30,6 +31,11 @@ export const dynamic = "force-dynamic";
 
 export default async function OggiPage() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isDemo = isDemoAccount(user?.email);
+
   const { data: membership } = await supabase
     .from("business_members")
     .select("business_id")
@@ -57,9 +63,13 @@ export default async function OggiPage() {
     (p) => p.stato === "to_check" || p.stato === "to_remind",
   );
 
-  const clientiDaRichiamare = clienti.filter(
-    (c) => c.stato === "Da ricontattare"
-  );
+  // Appuntamenti and "clienti da richiamare" have no real data behind them
+  // yet, so only the demo account sees the curated sample content here —
+  // everyone else gets the genuine empty state.
+  const appuntamenti = isDemo ? appuntamentiOggi : [];
+  const clientiDaRichiamare = isDemo
+    ? clienti.filter((c) => c.stato === "Da ricontattare")
+    : [];
   const abbonamentiInScadenza = abbonamenti.filter(
     (a) => a.stato === "In scadenza" || a.stato === "Da rinnovare"
   );
@@ -86,12 +96,12 @@ export default async function OggiPage() {
         <OverviewCard
           title="Appuntamenti di oggi"
           icon={CalendarClock}
-          count={appuntamentiOggi.length}
+          count={appuntamenti.length}
           href="/riepilogo-settimana"
           ctaLabel="Vedi la settimana"
           emptyText="Nessun appuntamento in programma per oggi."
         >
-          {appuntamentiOggi.map((a) => (
+          {appuntamenti.map((a) => (
             <li key={a.id} className="flex items-center justify-between gap-3">
               <span className="text-foreground">{a.cliente}</span>
               <span className="text-muted-foreground">{a.ora}</span>
