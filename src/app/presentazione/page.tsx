@@ -150,6 +150,19 @@ export default function PresentazionePage() {
           </Card>
         </section>
 
+        <section className="px-4 py-12">
+          <Card className="mx-auto max-w-2xl">
+            <CardContent className="flex flex-col items-center gap-4 p-6 text-center">
+              <p className="text-lg font-semibold text-foreground">
+                Stai valutando Impresa Viva per il tuo business?
+              </p>
+              <Button asChild size="lg" className="w-full sm:w-auto">
+                <Link href="/richiedi-demo">Richiedi una demo</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </section>
+
         <section className="px-4 py-14 text-center sm:py-20">
           <div className="mx-auto flex max-w-2xl flex-col items-center gap-5">
             <h2 className="text-2xl font-semibold text-foreground sm:text-3xl">

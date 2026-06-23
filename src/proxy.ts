@@ -3,7 +3,12 @@ import type { NextRequest } from "next/server";
 
 import { updateSession } from "@/lib/supabase/proxy";
 
-const PUBLIC_PATHS = ["/accedi", "/registrati", "/presentazione"];
+const PUBLIC_PATHS = [
+  "/accedi",
+  "/registrati",
+  "/presentazione",
+  "/richiedi-demo",
+];
 // /auth/confirm exchanges the recovery link for a session before the user
 // has any cookie-based session at all, so it must stay reachable like the
 // rest of the password-reset flow.
