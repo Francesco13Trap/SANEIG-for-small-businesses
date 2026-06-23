@@ -83,14 +83,16 @@ export default async function OggiPage() {
     (a) => a.stato === "expiring",
   );
 
-  // Appuntamenti and "clienti da richiamare" have no real data behind them
-  // yet, so only the demo account sees the curated sample content here —
-  // everyone else gets the genuine empty state.
+  // Appuntamenti, "clienti da richiamare" and "promemoria importanti" have
+  // no real data behind them yet, so only the demo account sees the curated
+  // sample content here — everyone else gets the genuine empty state.
   const appuntamenti = isDemo ? appuntamentiOggi : [];
   const clientiDaRichiamare = isDemo
     ? clienti.filter((c) => c.stato === "Da ricontattare")
     : [];
-  const promemoriaImportanti = promemoria.filter((p) => p.importante);
+  const promemoriaImportanti = isDemo
+    ? promemoria.filter((p) => p.importante)
+    : [];
 
   // "Messaggi pronti" reuses the same real reminder text shown on /messaggi,
   // so the count and preview here never drift from what the page itself
