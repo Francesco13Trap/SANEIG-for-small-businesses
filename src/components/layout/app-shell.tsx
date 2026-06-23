@@ -16,8 +16,17 @@ const NO_CHROME_PATHS = [
   "/nuova-password",
 ];
 
+// The public landing page owns its entire layout (its own header and
+// footer), so it renders with no app chrome at all — not even the
+// centered auth-box treatment used for login/register.
+const UNWRAPPED_PATHS = ["/presentazione"];
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+
+  if (UNWRAPPED_PATHS.includes(pathname)) {
+    return <>{children}</>;
+  }
 
   if (NO_CHROME_PATHS.includes(pathname)) {
     return (
