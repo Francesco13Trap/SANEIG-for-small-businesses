@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+
 import { PageHeader } from "@/components/layout/page-header";
 import { TrustNote } from "@/components/trust-note";
 import {
@@ -9,24 +11,70 @@ import {
 } from "@/components/ui/card";
 import { StatCard } from "@/components/riepilogo/stat-card";
 import { PrepareSummaryButton } from "@/components/commercialista/prepare-summary-button";
-import { riepilogoMensileCommercialista } from "@/lib/mock-data";
+import { DocumentiMancantiList } from "@/components/commercialista/documenti-mancanti-list";
+import { NoteDelMeseField } from "@/components/commercialista/note-del-mese-field";
+import { getActiveBusinessId } from "@/lib/supabase/business";
+import { createClient } from "@/lib/supabase/server";
+import { mapDocumentoMancanteRow, type DocumentoMancanteRow } from "@/lib/commercialista/types";
+import { startOfCurrentMonth } from "@/lib/monthly-period";
 
-export default function CommercialistaPage() {
-  const r = riepilogoMensileCommercialista;
+// Reads the session and several per-business Supabase tables on every
+// request — must never be prerendered at build time, when env vars/cookies
+// aren't available.
+export const dynamic = "force-dynamic";
+
+export default async function CommercialistaPage() {
+  const supabase = await createClient();
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    redirect("/nuova-attivita");
+  }
+
+  const [{ data: riepilogo }, { data: documentiData }, { count: pagamentiDaControllare }] =
+    await Promise.all([
+      supabase
+        .from("monthly_revenue_summaries")
+        .select("incassi_segnati, spese_segnate, notes")
+        .eq("business_id", businessId)
+        .eq("period", startOfCurrentMonth())
+        .maybeSingle(),
+      supabase
+        .from("missing_documents")
+        .select("id, description")
+        .eq("business_id", businessId)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("payments")
+        .select("id", { count: "exact", head: true })
+        .eq("business_id", businessId)
+        .eq("status", "to_check"),
+    ]);
+
+  const incassiSegnati = Number(riepilogo?.incassi_segnati ?? 0);
+  const speseSegnate = Number(riepilogo?.spese_segnate ?? 0);
+  const noteDelMese = riepilogo?.notes ?? "";
+  const documenti = ((documentiData as DocumentoMancanteRow[]) ?? []).map(
+    mapDocumentoMancanteRow,
+  );
+  const mese = new Intl.DateTimeFormat("it-IT", {
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Commercialista"
-        description={`Il riepilogo del mese di ${r.mese}, pronto da condividere.`}
+        description={`Il riepilogo del mese di ${mese}, pronto da condividere.`}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard label="Incassi segnati" value={r.incassiSegnati} />
-        <StatCard label="Spese segnate" value={r.speseSegnate} />
+        <StatCard label="Incassi segnati" value={incassiSegnati} />
+        <StatCard label="Spese segnate" value={speseSegnate} />
         <StatCard
           label="Pagamenti da controllare"
-          value={r.pagamentiDaControllare}
+          value={pagamentiDaControllare ?? 0}
         />
       </div>
 
@@ -38,19 +86,7 @@ export default function CommercialistaPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {r.documentiMancanti.length > 0 ? (
-            <ul className="flex flex-col gap-2 text-sm">
-              {r.documentiMancanti.map((doc) => (
-                <li key={doc} className="text-foreground">
-                  • {doc}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Nessun documento mancante al momento.
-            </p>
-          )}
+          <DocumentiMancantiList documenti={documenti} />
         </CardContent>
       </Card>
 
@@ -59,7 +95,7 @@ export default function CommercialistaPage() {
           <CardTitle>Note del mese</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-foreground">{r.noteDelMese}</p>
+          <NoteDelMeseField note={noteDelMese} />
         </CardContent>
       </Card>
 
@@ -71,7 +107,14 @@ export default function CommercialistaPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <PrepareSummaryButton riepilogo={r} />
+          <PrepareSummaryButton
+            mese={mese}
+            incassiSegnati={incassiSegnati}
+            speseSegnate={speseSegnate}
+            pagamentiDaControllare={pagamentiDaControllare ?? 0}
+            documentiMancanti={documenti.map((d) => d.descrizione)}
+            noteDelMese={noteDelMese}
+          />
         </CardContent>
       </Card>
 

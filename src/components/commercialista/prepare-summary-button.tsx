@@ -4,9 +4,17 @@ import { useState } from "react";
 import { Check, FileText } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import type { RiepilogoMensileCommercialista } from "@/lib/types";
 
-function buildSummaryText(r: RiepilogoMensileCommercialista) {
+type PrepareSummaryButtonProps = {
+  mese: string;
+  incassiSegnati: number;
+  speseSegnate: number;
+  pagamentiDaControllare: number;
+  documentiMancanti: string[];
+  noteDelMese: string;
+};
+
+function buildSummaryText(r: PrepareSummaryButtonProps) {
   const documenti =
     r.documentiMancanti.length > 0
       ? r.documentiMancanti.map((d) => `- ${d}`).join("\n")
@@ -19,20 +27,16 @@ function buildSummaryText(r: RiepilogoMensileCommercialista) {
     `Pagamenti da controllare: ${r.pagamentiDaControllare}`,
     `Documenti mancanti:`,
     documenti,
-    `Note del mese: ${r.noteDelMese}`,
+    `Note del mese: ${r.noteDelMese || "Nessuna nota."}`,
   ].join("\n");
 }
 
-export function PrepareSummaryButton({
-  riepilogo,
-}: {
-  riepilogo: RiepilogoMensileCommercialista;
-}) {
+export function PrepareSummaryButton(props: PrepareSummaryButtonProps) {
   const [pronto, setPronto] = useState(false);
 
   async function handleClick() {
     try {
-      await navigator.clipboard.writeText(buildSummaryText(riepilogo));
+      await navigator.clipboard.writeText(buildSummaryText(props));
       setPronto(true);
       setTimeout(() => setPronto(false), 3000);
     } catch {

@@ -5,13 +5,9 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveBusinessId } from "@/lib/supabase/business";
 import { parseRegimeIva } from "@/lib/iva/types";
+import { startOfCurrentMonth } from "@/lib/monthly-period";
 
 export type IvaFormState = { error?: string; success?: string } | undefined;
-
-function startOfCurrentMonth(): string {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-}
 
 function readImporto(value: FormDataEntryValue | null): number {
   const parsed = Number(String(value ?? "0").replace(",", "."));

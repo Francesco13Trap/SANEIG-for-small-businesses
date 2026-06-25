@@ -18,16 +18,12 @@ import { RiepilogoMeseDialog } from "@/components/iva/riepilogo-mese-dialog";
 import { getActiveBusinessId } from "@/lib/supabase/business";
 import { createClient } from "@/lib/supabase/server";
 import { parseRegimeIva } from "@/lib/iva/types";
+import { startOfCurrentMonth } from "@/lib/monthly-period";
 
 // Reads the session, the IVA settings and the current month's summary via
 // Supabase on every request — must never be prerendered at build time,
 // when env vars/cookies aren't available.
 export const dynamic = "force-dynamic";
-
-function startOfCurrentMonth(): string {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-}
 
 export default async function IvaEIncassiPage() {
   const supabase = await createClient();
