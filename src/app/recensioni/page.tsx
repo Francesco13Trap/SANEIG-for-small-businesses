@@ -1,17 +1,35 @@
+import { redirect } from "next/navigation";
+
 import { PageHeader } from "@/components/layout/page-header";
 import { TrustNote } from "@/components/trust-note";
-import { StatusBadge } from "@/components/status-badge";
-import { CopyMessageButton } from "@/components/copy-message-button";
-import { Stars } from "@/components/recensioni/stars";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card";
-import { recensioni } from "@/lib/mock-data";
+import { Card, CardContent } from "@/components/ui/card";
+import { RecensioneFormDialog } from "@/components/recensioni/recensione-form-dialog";
+import { RecensioniList } from "@/components/recensioni/recensioni-list";
+import { getActiveBusinessId } from "@/lib/supabase/business";
+import { createClient } from "@/lib/supabase/server";
+import { mapRecensioneRow, type RecensioneRow } from "@/lib/recensioni/types";
 
-export default function RecensioniPage() {
+// Reads the session and the reviews list via Supabase on every request —
+// must never be prerendered at build time, when env vars/cookies aren't
+// available.
+export const dynamic = "force-dynamic";
+
+export default async function RecensioniPage() {
+  const supabase = await createClient();
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    redirect("/nuova-attivita");
+  }
+
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("id, client_name, rating, comment, review_date, responded, created_at")
+    .eq("business_id", businessId)
+    .order("review_date", { ascending: false });
+
+  const recensioni = ((data as RecensioneRow[]) ?? []).map(mapRecensioneRow);
+
   return (
     <div>
       <PageHeader
@@ -19,31 +37,37 @@ export default function RecensioniPage() {
         description="Le recensioni lasciate dai clienti, da leggere e da ringraziare."
       />
 
-      <div className="flex flex-col gap-3">
-        {recensioni.map((r) => (
-          <Card key={r.id}>
-            <CardHeader className="flex-row items-center justify-between space-y-0">
-              <div className="flex flex-col gap-1">
-                <span className="font-medium text-foreground">
-                  {r.cliente}
-                </span>
-                <Stars punteggio={r.punteggio} />
-              </div>
-              <StatusBadge status={r.risposta} />
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-foreground">{r.testo}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{r.data}</p>
-            </CardContent>
-            <CardFooter>
-              <CopyMessageButton
-                label="Copia risposta"
-                message={`Ciao ${r.cliente}, grazie mille per la tua recensione! Per noi conta davvero tanto.`}
-              />
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
+      {error ? (
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm text-destructive">
+              Non è stato possibile caricare le recensioni.
+            </p>
+          </CardContent>
+        </Card>
+      ) : recensioni.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-start gap-4 p-6">
+            <div className="flex flex-col gap-1">
+              <p className="font-medium text-foreground">
+                Nessuna recensione salvata.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Aggiungi la prima recensione ricevuta per iniziare a tenerne
+                traccia.
+              </p>
+            </div>
+            <RecensioneFormDialog mode="add" />
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-end">
+            <RecensioneFormDialog mode="add" />
+          </div>
+          <RecensioniList recensioni={recensioni} />
+        </div>
+      )}
 
       <TrustNote className="mt-6">
         Nessun messaggio viene inviato senza conferma.
