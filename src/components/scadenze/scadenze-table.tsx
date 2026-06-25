@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState } from "react";
 import { CheckCircle2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -13,17 +13,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { ScadenzaAttivita } from "@/lib/types";
+import { ScadenzaFormDialog } from "@/components/scadenze/scadenza-form-dialog";
+import { EliminaScadenzaDialog } from "@/components/scadenze/elimina-scadenza-dialog";
+import { setScadenzaCompletata } from "@/app/scadenze-attivita/actions";
+import {
+  STATO_SCADENZA_LABELS,
+  formatScadenza,
+  type ScadenzaRecord,
+} from "@/lib/scadenze/types";
 
-export function ScadenzeTable({ scadenze }: { scadenze: ScadenzaAttivita[] }) {
-  const [righe, setRighe] = useState(scadenze);
-
-  function segnaCompletata(id: string) {
-    setRighe((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, stato: "Completata" } : s))
-    );
-  }
-
+export function ScadenzeTable({ scadenze }: { scadenze: ScadenzaRecord[] }) {
   return (
     <Table>
       <TableHeader>
@@ -32,39 +31,61 @@ export function ScadenzeTable({ scadenze }: { scadenze: ScadenzaAttivita[] }) {
           <TableHead>Categoria</TableHead>
           <TableHead>Scadenza</TableHead>
           <TableHead>Stato</TableHead>
-          <TableHead className="pr-5 text-right">Azione</TableHead>
+          <TableHead className="pr-5 text-right">Azioni</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {righe.map((s) => (
-          <TableRow key={s.id}>
-            <TableCell className="pl-5 font-medium text-foreground">
-              {s.titolo}
-            </TableCell>
-            <TableCell className="text-muted-foreground">
-              {s.categoria}
-            </TableCell>
-            <TableCell className="text-muted-foreground">
-              {s.scadenza}
-            </TableCell>
-            <TableCell>
-              <StatusBadge status={s.stato} />
-            </TableCell>
-            <TableCell className="pr-5 text-right">
-              {s.stato === "Completata" ? (
-                <Button variant="ghost" size="sm" disabled>
-                  <CheckCircle2 className="h-4 w-4 text-success" />
-                  Completata
-                </Button>
-              ) : (
-                <Button size="sm" onClick={() => segnaCompletata(s.id)}>
-                  Segna come completata
-                </Button>
-              )}
-            </TableCell>
-          </TableRow>
+        {scadenze.map((s) => (
+          <ScadenzaRow key={s.id} scadenza={s} />
         ))}
       </TableBody>
     </Table>
+  );
+}
+
+function ScadenzaRow({ scadenza: s }: { scadenza: ScadenzaRecord }) {
+  const [state, formAction, pending] = useActionState(
+    setScadenzaCompletata,
+    undefined,
+  );
+  const completata = s.stato === "done";
+
+  return (
+    <TableRow>
+      <TableCell className="pl-5 font-medium text-foreground">
+        {s.titolo}
+      </TableCell>
+      <TableCell className="text-muted-foreground">
+        {s.categoria ?? "—"}
+      </TableCell>
+      <TableCell className="text-muted-foreground">
+        {formatScadenza(s.scadenza)}
+      </TableCell>
+      <TableCell>
+        <StatusBadge status={STATO_SCADENZA_LABELS[s.stato]} />
+      </TableCell>
+      <TableCell className="pr-5 text-right">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {completata ? (
+            <Button variant="ghost" size="sm" disabled>
+              <CheckCircle2 className="h-4 w-4 text-success" />
+              Completata
+            </Button>
+          ) : (
+            <form action={formAction}>
+              <input type="hidden" name="id" value={s.id} />
+              <Button size="sm" type="submit" disabled={pending}>
+                Segna come completata
+              </Button>
+            </form>
+          )}
+          <ScadenzaFormDialog mode="edit" scadenza={s} />
+          <EliminaScadenzaDialog id={s.id} titolo={s.titolo} />
+        </div>
+        {state?.error && (
+          <p className="mt-1 text-xs text-destructive">{state.error}</p>
+        )}
+      </TableCell>
+    </TableRow>
   );
 }
