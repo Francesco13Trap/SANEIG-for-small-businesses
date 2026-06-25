@@ -24,7 +24,8 @@ import {
   mapAbbonamentoRow,
   type AbbonamentoRow,
 } from "@/lib/abbonamenti/types";
-import { appuntamentiOggi, clienti, promemoria } from "@/lib/mock-data";
+import { mapPromemoriaRow, type PromemoriaRow } from "@/lib/promemoria/types";
+import { appuntamentiOggi, clienti } from "@/lib/mock-data";
 
 // Reads the session and real payments via Supabase on every request — must
 // never be prerendered at build time, when env vars/cookies aren't
@@ -50,7 +51,7 @@ export default async function OggiPage() {
 
   // Errors fall back to an empty list rather than surfacing a raw Supabase
   // error: Oggi's cards already have a clean "no warnings" state for that.
-  const [paymentsResult, subscriptionsResult] = await Promise.all([
+  const [paymentsResult, subscriptionsResult, remindersResult] = await Promise.all([
     supabase
       .from("payments")
       .select("id, client_id, amount, due_date, status, created_at, updated_at, clients(name)")
@@ -65,6 +66,13 @@ export default async function OggiPage() {
       .eq("business_id", membership.business_id)
       .neq("status", "cancelled")
       .order("expiry_date", { ascending: true }),
+    supabase
+      .from("reminders")
+      .select("id, title, detail, due_date, important, done, created_at, updated_at")
+      .eq("business_id", membership.business_id)
+      .eq("important", true)
+      .eq("done", false)
+      .order("due_date", { ascending: true }),
   ]);
 
   const pagamentiNonPagati = ((paymentsResult.data as PagamentoRow[]) ?? []).map(
@@ -83,16 +91,16 @@ export default async function OggiPage() {
     (a) => a.stato === "expiring",
   );
 
-  // Appuntamenti, "clienti da richiamare" and "promemoria importanti" have
-  // no real data behind them yet, so only the demo account sees the curated
-  // sample content here — everyone else gets the genuine empty state.
+  // Appuntamenti and "clienti da richiamare" have no real data behind them
+  // yet, so only the demo account sees the curated sample content here —
+  // everyone else gets the genuine empty state.
   const appuntamenti = isDemo ? appuntamentiOggi : [];
   const clientiDaRichiamare = isDemo
     ? clienti.filter((c) => c.stato === "Da ricontattare")
     : [];
-  const promemoriaImportanti = isDemo
-    ? promemoria.filter((p) => p.importante)
-    : [];
+  const promemoriaImportanti = ((remindersResult.data as PromemoriaRow[]) ?? []).map(
+    mapPromemoriaRow,
+  );
 
   // "Messaggi pronti" reuses the same real reminder text shown on /messaggi,
   // so the count and preview here never drift from what the page itself
