@@ -60,7 +60,12 @@ grant execute on function public.is_business_member(uuid) to authenticated;
 grant execute on function public.business_role(uuid) to authenticated;
 
 -- Reminders — the table the Promemoria page (and the Oggi page's
--- "Promemoria importanti" card) read and write.
+-- "Promemoria importanti" card) read and write. The very first migration
+-- in this project (20260618000001) already created public.reminders, but
+-- with an `is_important` column and no `done`/`updated_at` — if that
+-- version is what actually exists on this database, the create table
+-- below is a no-op, so the columns are added separately too. The legacy
+-- is_important column (if present) is left in place, unused.
 create table if not exists public.reminders (
   id uuid primary key default gen_random_uuid(),
   business_id uuid not null references public.businesses (id) on delete cascade,
@@ -72,6 +77,13 @@ create table if not exists public.reminders (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.reminders
+  add column if not exists important boolean not null default false;
+alter table public.reminders
+  add column if not exists done boolean not null default false;
+alter table public.reminders
+  add column if not exists updated_at timestamptz not null default now();
 
 drop trigger if exists reminders_set_updated_at on public.reminders;
 create trigger reminders_set_updated_at
