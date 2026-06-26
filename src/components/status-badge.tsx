@@ -26,6 +26,7 @@ const STATUS_VARIANT: Record<string, BadgeVariant> = {
   Risposto: "success",
 
   "Da inviare": "outline",
+  Bozza: "outline",
   Inviato: "secondary",
   Accettato: "success",
   Rifiutato: "destructive",
