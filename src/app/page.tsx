@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { CalendarClock, Users, Wallet, Repeat, MessageSquare, Bell } from "lucide-react";
+import { CalendarClock, Users, Wallet, Repeat, MessageSquare, Bell, Package } from "lucide-react";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { TrustNote } from "@/components/trust-note";
@@ -25,6 +25,7 @@ import {
   type AbbonamentoRow,
 } from "@/lib/abbonamenti/types";
 import { mapPromemoriaRow, type PromemoriaRow } from "@/lib/promemoria/types";
+import { isScortaBassa, mapProdottoRow, type ProdottoRow } from "@/lib/magazzino/types";
 import { appuntamentiOggi, clienti } from "@/lib/mock-data";
 
 // Reads the session and real payments via Supabase on every request — must
@@ -51,29 +52,37 @@ export default async function OggiPage() {
 
   // Errors fall back to an empty list rather than surfacing a raw Supabase
   // error: Oggi's cards already have a clean "no warnings" state for that.
-  const [paymentsResult, subscriptionsResult, remindersResult] = await Promise.all([
-    supabase
-      .from("payments")
-      .select("id, client_id, amount, due_date, status, created_at, updated_at, clients(name)")
-      .eq("business_id", membership.business_id)
-      .neq("status", "paid")
-      .order("due_date", { ascending: true }),
-    supabase
-      .from("subscriptions")
-      .select(
-        "id, client_id, name, start_date, expiry_date, status, note, created_at, updated_at, clients(name)",
-      )
-      .eq("business_id", membership.business_id)
-      .neq("status", "cancelled")
-      .order("expiry_date", { ascending: true }),
-    supabase
-      .from("reminders")
-      .select("id, title, detail, due_date, important, done, created_at, updated_at")
-      .eq("business_id", membership.business_id)
-      .eq("important", true)
-      .eq("done", false)
-      .order("due_date", { ascending: true }),
-  ]);
+  const [paymentsResult, subscriptionsResult, remindersResult, inventoryResult] =
+    await Promise.all([
+      supabase
+        .from("payments")
+        .select("id, client_id, amount, due_date, status, created_at, updated_at, clients(name)")
+        .eq("business_id", membership.business_id)
+        .neq("status", "paid")
+        .order("due_date", { ascending: true }),
+      supabase
+        .from("subscriptions")
+        .select(
+          "id, client_id, name, start_date, expiry_date, status, note, created_at, updated_at, clients(name)",
+        )
+        .eq("business_id", membership.business_id)
+        .neq("status", "cancelled")
+        .order("expiry_date", { ascending: true }),
+      supabase
+        .from("reminders")
+        .select("id, title, detail, due_date, important, done, created_at, updated_at")
+        .eq("business_id", membership.business_id)
+        .eq("important", true)
+        .eq("done", false)
+        .order("due_date", { ascending: true }),
+      supabase
+        .from("inventory_items")
+        .select(
+          "id, supplier_id, name, quantity, minimum_quantity, unit, category, note, created_at, updated_at, suppliers(name)",
+        )
+        .eq("business_id", membership.business_id)
+        .order("name", { ascending: true }),
+    ]);
 
   const pagamentiNonPagati = ((paymentsResult.data as PagamentoRow[]) ?? []).map(
     mapPagamentoRow,
@@ -101,6 +110,10 @@ export default async function OggiPage() {
   const promemoriaImportanti = ((remindersResult.data as PromemoriaRow[]) ?? []).map(
     mapPromemoriaRow,
   );
+
+  const prodottiScortaBassa = ((inventoryResult.data as ProdottoRow[]) ?? [])
+    .map(mapProdottoRow)
+    .filter(isScortaBassa);
 
   // "Messaggi pronti" reuses the same real reminder text shown on /messaggi,
   // so the count and preview here never drift from what the page itself
@@ -222,6 +235,21 @@ export default async function OggiPage() {
           {promemoriaImportanti.map((p) => (
             <li key={p.id} className="text-foreground">
               {p.titolo}
+            </li>
+          ))}
+        </OverviewCard>
+
+        <OverviewCard
+          title="Magazzino"
+          icon={Package}
+          count={prodottiScortaBassa.length}
+          href="/magazzino"
+          ctaLabel="Apri Magazzino"
+          emptyText="Nessun prodotto con scorta bassa."
+        >
+          {prodottiScortaBassa.map((p) => (
+            <li key={p.id} className="text-foreground">
+              {p.nome} ha scorta bassa.
             </li>
           ))}
         </OverviewCard>
