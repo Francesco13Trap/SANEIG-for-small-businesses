@@ -1,21 +1,35 @@
-import { Phone } from "lucide-react";
+import { redirect } from "next/navigation";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { TrustNote } from "@/components/trust-note";
-import { StatusBadge } from "@/components/status-badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { fornitori } from "@/lib/mock-data";
+import { FornitoreFormDialog } from "@/components/fornitori/fornitore-form-dialog";
+import { FornitoriList } from "@/components/fornitori/fornitori-list";
+import { getActiveBusinessId } from "@/lib/supabase/business";
+import { createClient } from "@/lib/supabase/server";
+import { mapFornitoreRow, type FornitoreRow } from "@/lib/fornitori/types";
 
-export default function FornitoriPage() {
+// Reads the session and the suppliers list via Supabase on every request —
+// must never be prerendered at build time, when env vars/cookies aren't
+// available.
+export const dynamic = "force-dynamic";
+
+export default async function FornitoriPage() {
+  const supabase = await createClient();
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    redirect("/nuova-attivita");
+  }
+
+  const { data, error } = await supabase
+    .from("suppliers")
+    .select("id, name, contact_name, phone, email, category, note, created_at, updated_at")
+    .eq("business_id", businessId)
+    .order("name", { ascending: true });
+
+  const fornitori = ((data as FornitoreRow[]) ?? []).map(mapFornitoreRow);
+
   return (
     <div>
       <PageHeader
@@ -23,51 +37,32 @@ export default function FornitoriPage() {
         description="I fornitori dell'attività e i loro contatti."
       />
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="pl-5">Nome</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Telefono</TableHead>
-                <TableHead>Ultimo ordine</TableHead>
-                <TableHead>Stato</TableHead>
-                <TableHead className="pr-5 text-right">Azione</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {fornitori.map((f) => (
-                <TableRow key={f.id}>
-                  <TableCell className="pl-5 font-medium text-foreground">
-                    {f.nome}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {f.categoria}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {f.telefono}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {f.ultimoOrdine}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={f.stato} />
-                  </TableCell>
-                  <TableCell className="pr-5 text-right">
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={`tel:${f.telefono.replace(/\s+/g, "")}`}>
-                        <Phone className="h-4 w-4" />
-                        Chiama
-                      </a>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {error ? (
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm text-destructive">
+              Non è stato possibile caricare i fornitori.
+            </p>
+          </CardContent>
+        </Card>
+      ) : fornitori.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-start gap-4 p-6">
+            <div className="flex flex-col gap-1">
+              <p className="font-medium text-foreground">
+                Nessun fornitore salvato.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Aggiungi il primo fornitore per tenere i contatti importanti
+                in ordine.
+              </p>
+            </div>
+            <FornitoreFormDialog mode="add" />
+          </CardContent>
+        </Card>
+      ) : (
+        <FornitoriList fornitori={fornitori} />
+      )}
 
       <TrustNote className="mt-6">
         Puoi modificare tutto in qualsiasi momento.
