@@ -32,6 +32,7 @@ const STATUS_VARIANT: Record<string, BadgeVariant> = {
   Rifiutato: "destructive",
 
   "Da pagare": "warning",
+  "In ritardo": "destructive",
 
   "Da contattare": "warning",
 

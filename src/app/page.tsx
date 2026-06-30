@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { CalendarClock, Users, Wallet, Repeat, MessageSquare, Bell, Package } from "lucide-react";
+import { CalendarClock, Users, Wallet, Repeat, MessageSquare, Bell, Package, Banknote } from "lucide-react";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { TrustNote } from "@/components/trust-note";
@@ -26,6 +26,7 @@ import {
 } from "@/lib/abbonamenti/types";
 import { mapPromemoriaRow, type PromemoriaRow } from "@/lib/promemoria/types";
 import { isScortaBassa, mapProdottoRow, type ProdottoRow } from "@/lib/magazzino/types";
+import { mapStipendioRow, type StipendioRow } from "@/lib/stipendi/types";
 import { appuntamentiOggi, clienti } from "@/lib/mock-data";
 
 // Reads the session and real payments via Supabase on every request — must
@@ -52,8 +53,13 @@ export default async function OggiPage() {
 
   // Errors fall back to an empty list rather than surfacing a raw Supabase
   // error: Oggi's cards already have a clean "no warnings" state for that.
-  const [paymentsResult, subscriptionsResult, remindersResult, inventoryResult] =
-    await Promise.all([
+  const [
+    paymentsResult,
+    subscriptionsResult,
+    remindersResult,
+    inventoryResult,
+    staffPaymentsResult,
+  ] = await Promise.all([
       supabase
         .from("payments")
         .select("id, client_id, amount, due_date, status, created_at, updated_at, clients(name)")
@@ -82,6 +88,12 @@ export default async function OggiPage() {
         )
         .eq("business_id", membership.business_id)
         .order("name", { ascending: true }),
+      supabase
+        .from("staff_payments")
+        .select("id, person_name, role, amount, month, due_date, status, note, created_at, updated_at")
+        .eq("business_id", membership.business_id)
+        .in("status", ["to_pay", "delayed"])
+        .order("due_date", { ascending: true }),
     ]);
 
   const pagamentiNonPagati = ((paymentsResult.data as PagamentoRow[]) ?? []).map(
@@ -114,6 +126,10 @@ export default async function OggiPage() {
   const prodottiScortaBassa = ((inventoryResult.data as ProdottoRow[]) ?? [])
     .map(mapProdottoRow)
     .filter(isScortaBassa);
+
+  const stipendiDaControllare = ((staffPaymentsResult.data as StipendioRow[]) ?? []).map(
+    mapStipendioRow,
+  );
 
   // "Messaggi pronti" reuses the same real reminder text shown on /messaggi,
   // so the count and preview here never drift from what the page itself
@@ -250,6 +266,24 @@ export default async function OggiPage() {
           {prodottiScortaBassa.map((p) => (
             <li key={p.id} className="text-foreground">
               {p.nome} ha scorta bassa.
+            </li>
+          ))}
+        </OverviewCard>
+
+        <OverviewCard
+          title="Stipendi"
+          icon={Banknote}
+          count={stipendiDaControllare.length}
+          href="/stipendi"
+          ctaLabel="Apri Stipendi"
+          emptyText="Nessun pagamento collaboratore da controllare."
+        >
+          {stipendiDaControllare.map((s) => (
+            <li key={s.id} className="flex items-center justify-between gap-3">
+              <span className="text-foreground">{s.nome}</span>
+              <span className="text-muted-foreground">
+                Pagamento collaboratore da controllare.
+              </span>
             </li>
           ))}
         </OverviewCard>
