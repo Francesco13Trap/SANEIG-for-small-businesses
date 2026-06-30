@@ -59,10 +59,17 @@ export async function setPromemoriaFatto(
   }
 
   const supabase = await createClient();
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    return { error: "Non è stato possibile aggiornare il promemoria." };
+  }
+
   const { error } = await supabase
     .from("reminders")
     .update({ done: fatto })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("business_id", businessId);
 
   if (error) {
     if (process.env.NODE_ENV !== "production") {
@@ -87,7 +94,17 @@ export async function deletePromemoria(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("reminders").delete().eq("id", id);
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    return { error: "Non è stato possibile eliminare il promemoria." };
+  }
+
+  const { error } = await supabase
+    .from("reminders")
+    .delete()
+    .eq("id", id)
+    .eq("business_id", businessId);
 
   if (error) {
     if (process.env.NODE_ENV !== "production") {

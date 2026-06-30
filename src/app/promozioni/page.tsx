@@ -16,6 +16,15 @@ export const dynamic = "force-dynamic";
 
 export default async function PromozioniPage() {
   const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/accedi");
+  }
+
   const businessId = await getActiveBusinessId(supabase);
 
   if (!businessId) {

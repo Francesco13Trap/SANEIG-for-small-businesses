@@ -39,6 +39,11 @@ export default async function OggiPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/accedi");
+  }
+
   const isDemo = isDemoAccount(user?.email);
 
   const { data: membership } = await supabase

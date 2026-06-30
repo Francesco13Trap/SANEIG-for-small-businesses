@@ -74,6 +74,12 @@ export async function updateScadenza(
   }
 
   const supabase = await createClient();
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    return { error: "Non è stato possibile salvare la scadenza." };
+  }
+
   const { error } = await supabase
     .from("deadlines")
     .update({
@@ -82,7 +88,8 @@ export async function updateScadenza(
       due_date: scadenza,
       status: stato,
     })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("business_id", businessId);
 
   if (error) {
     if (process.env.NODE_ENV !== "production") {
@@ -107,10 +114,17 @@ export async function setScadenzaCompletata(
   }
 
   const supabase = await createClient();
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    return { error: "Non è stato possibile aggiornare la scadenza." };
+  }
+
   const { error } = await supabase
     .from("deadlines")
     .update({ status: "done" })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("business_id", businessId);
 
   if (error) {
     if (process.env.NODE_ENV !== "production") {
@@ -135,7 +149,17 @@ export async function deleteScadenza(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("deadlines").delete().eq("id", id);
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    return { error: "Non è stato possibile eliminare la scadenza." };
+  }
+
+  const { error } = await supabase
+    .from("deadlines")
+    .delete()
+    .eq("id", id)
+    .eq("business_id", businessId);
 
   if (error) {
     if (process.env.NODE_ENV !== "production") {

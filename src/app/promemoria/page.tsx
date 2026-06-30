@@ -16,6 +16,15 @@ export const dynamic = "force-dynamic";
 
 export default async function PromemoriaPage() {
   const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/accedi");
+  }
+
   const businessId = await getActiveBusinessId(supabase);
 
   if (!businessId) {
@@ -72,7 +81,7 @@ export default async function PromemoriaPage() {
       )}
 
       <TrustNote className="mt-6">
-        Puoi modificare tutto in qualsiasi momento.
+        Puoi segnare un promemoria come fatto, riaprirlo o eliminarlo in qualsiasi momento.
       </TrustNote>
     </div>
   );

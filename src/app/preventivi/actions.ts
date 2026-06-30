@@ -97,6 +97,12 @@ export async function updatePreventivo(
   }
 
   const supabase = await createClient();
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    return { error: "Non è stato possibile salvare il preventivo." };
+  }
+
   const { error } = await supabase
     .from("quotes")
     .update({
@@ -108,7 +114,8 @@ export async function updatePreventivo(
       status: stato,
       note: nota,
     })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("business_id", businessId);
 
   if (error) {
     if (process.env.NODE_ENV !== "production") {
@@ -132,7 +139,17 @@ export async function deletePreventivo(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("quotes").delete().eq("id", id);
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    return { error: "Non è stato possibile eliminare il preventivo." };
+  }
+
+  const { error } = await supabase
+    .from("quotes")
+    .delete()
+    .eq("id", id)
+    .eq("business_id", businessId);
 
   if (error) {
     if (process.env.NODE_ENV !== "production") {

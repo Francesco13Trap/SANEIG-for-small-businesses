@@ -87,6 +87,12 @@ export async function updateAbbonamento(
   }
 
   const supabase = await createClient();
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    return { error: "Non è stato possibile salvare l'abbonamento." };
+  }
+
   const { error } = await supabase
     .from("subscriptions")
     .update({
@@ -97,7 +103,8 @@ export async function updateAbbonamento(
       status: stato,
       note: nota,
     })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("business_id", businessId);
 
   if (error) {
     if (process.env.NODE_ENV !== "production") {
@@ -121,7 +128,17 @@ export async function deleteAbbonamento(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("subscriptions").delete().eq("id", id);
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    return { error: "Non è stato possibile eliminare l'abbonamento." };
+  }
+
+  const { error } = await supabase
+    .from("subscriptions")
+    .delete()
+    .eq("id", id)
+    .eq("business_id", businessId);
 
   if (error) {
     if (process.env.NODE_ENV !== "production") {

@@ -73,6 +73,12 @@ export async function updatePromozione(
   }
 
   const supabase = await createClient();
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    return { error: "Non è stato possibile salvare la promozione." };
+  }
+
   const { error } = await supabase
     .from("promotions")
     .update({
@@ -81,7 +87,8 @@ export async function updatePromozione(
       period: periodo,
       status: stato,
     })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("business_id", businessId);
 
   if (error) {
     if (process.env.NODE_ENV !== "production") {
@@ -105,7 +112,17 @@ export async function deletePromozione(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("promotions").delete().eq("id", id);
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    return { error: "Non è stato possibile eliminare la promozione." };
+  }
+
+  const { error } = await supabase
+    .from("promotions")
+    .delete()
+    .eq("id", id)
+    .eq("business_id", businessId);
 
   if (error) {
     if (process.env.NODE_ENV !== "production") {

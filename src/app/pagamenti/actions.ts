@@ -75,6 +75,12 @@ export async function updatePagamento(
   }
 
   const supabase = await createClient();
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    return { error: "Non è stato possibile salvare il pagamento." };
+  }
+
   const { error } = await supabase
     .from("payments")
     .update({
@@ -83,7 +89,8 @@ export async function updatePagamento(
       due_date: scadenza,
       status: stato,
     })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("business_id", businessId);
 
   if (error) {
     if (process.env.NODE_ENV !== "production") {
@@ -107,7 +114,17 @@ export async function deletePagamento(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("payments").delete().eq("id", id);
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    return { error: "Non è stato possibile eliminare il pagamento." };
+  }
+
+  const { error } = await supabase
+    .from("payments")
+    .delete()
+    .eq("id", id)
+    .eq("business_id", businessId);
 
   if (error) {
     if (process.env.NODE_ENV !== "production") {

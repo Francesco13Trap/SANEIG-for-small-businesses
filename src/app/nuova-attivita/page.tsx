@@ -16,6 +16,14 @@ export const dynamic = "force-dynamic";
 
 export default async function NuovaAttivitaPage() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/accedi");
+  }
+
   const { data: membership } = await supabase
     .from("business_members")
     .select("business_id")

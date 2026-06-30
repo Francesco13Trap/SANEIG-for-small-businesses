@@ -76,6 +76,12 @@ export async function updateRecensione(
   }
 
   const supabase = await createClient();
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    return { error: "Non è stato possibile salvare la recensione." };
+  }
+
   const { error } = await supabase
     .from("reviews")
     .update({
@@ -84,7 +90,8 @@ export async function updateRecensione(
       comment: testo,
       review_date: data,
     })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("business_id", businessId);
 
   if (error) {
     if (process.env.NODE_ENV !== "production") {
@@ -109,10 +116,17 @@ export async function setRecensioneRisposta(
   }
 
   const supabase = await createClient();
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    return { error: "Non è stato possibile aggiornare la recensione." };
+  }
+
   const { error } = await supabase
     .from("reviews")
     .update({ responded: risposto })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("business_id", businessId);
 
   if (error) {
     if (process.env.NODE_ENV !== "production") {
@@ -136,7 +150,17 @@ export async function deleteRecensione(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("reviews").delete().eq("id", id);
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    return { error: "Non è stato possibile eliminare la recensione." };
+  }
+
+  const { error } = await supabase
+    .from("reviews")
+    .delete()
+    .eq("id", id)
+    .eq("business_id", businessId);
 
   if (error) {
     if (process.env.NODE_ENV !== "production") {

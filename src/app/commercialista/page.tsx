@@ -25,6 +25,15 @@ export const dynamic = "force-dynamic";
 
 export default async function CommercialistaPage() {
   const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/accedi");
+  }
+
   const businessId = await getActiveBusinessId(supabase);
 
   if (!businessId) {
@@ -70,8 +79,8 @@ export default async function CommercialistaPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard label="Incassi segnati" value={incassiSegnati} />
-        <StatCard label="Spese segnate" value={speseSegnate} />
+        <StatCard label="Incassi segnati" value={incassiSegnati} suffix="€" />
+        <StatCard label="Spese segnate" value={speseSegnate} suffix="€" />
         <StatCard
           label="Pagamenti da controllare"
           value={pagamentiDaControllare ?? 0}

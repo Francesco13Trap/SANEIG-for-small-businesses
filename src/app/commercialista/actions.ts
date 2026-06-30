@@ -52,7 +52,17 @@ export async function deleteDocumentoMancante(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("missing_documents").delete().eq("id", id);
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    return { error: "Non è stato possibile aggiornare il documento." };
+  }
+
+  const { error } = await supabase
+    .from("missing_documents")
+    .delete()
+    .eq("id", id)
+    .eq("business_id", businessId);
 
   if (error) {
     if (process.env.NODE_ENV !== "production") {

@@ -73,10 +73,17 @@ export async function updateCliente(
   }
 
   const supabase = await createClient();
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    return { error: "Non è stato possibile salvare il cliente." };
+  }
+
   const { error } = await supabase
     .from("clients")
     .update({ name: nome, phone: telefono, email, note: nota })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("business_id", businessId);
 
   if (error) {
     if (process.env.NODE_ENV !== "production") {
@@ -100,7 +107,17 @@ export async function deleteCliente(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("clients").delete().eq("id", id);
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    return { error: "Non è stato possibile eliminare il cliente." };
+  }
+
+  const { error } = await supabase
+    .from("clients")
+    .delete()
+    .eq("id", id)
+    .eq("business_id", businessId);
 
   if (error) {
     if (process.env.NODE_ENV !== "production") {

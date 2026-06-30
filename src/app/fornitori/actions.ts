@@ -80,6 +80,12 @@ export async function updateFornitore(
   }
 
   const supabase = await createClient();
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    return { error: "Non è stato possibile salvare il fornitore." };
+  }
+
   const { error } = await supabase
     .from("suppliers")
     .update({
@@ -90,7 +96,8 @@ export async function updateFornitore(
       category: categoria,
       note: nota,
     })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("business_id", businessId);
 
   if (error) {
     if (process.env.NODE_ENV !== "production") {
@@ -114,7 +121,17 @@ export async function deleteFornitore(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("suppliers").delete().eq("id", id);
+  const businessId = await getActiveBusinessId(supabase);
+
+  if (!businessId) {
+    return { error: "Non è stato possibile eliminare il fornitore." };
+  }
+
+  const { error } = await supabase
+    .from("suppliers")
+    .delete()
+    .eq("id", id)
+    .eq("business_id", businessId);
 
   if (error) {
     if (process.env.NODE_ENV !== "production") {
