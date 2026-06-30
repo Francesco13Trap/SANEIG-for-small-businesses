@@ -65,6 +65,34 @@ export function mapAbbonamentoRow(row: AbbonamentoRow): AbbonamentoRecord {
   };
 }
 
+const EXPIRING_WINDOW_DAYS = 7;
+
+// Single source of truth for how a subscription's status is shown: the
+// stored status stays the record of truth for "cancelled", everything
+// else is derived from today's date vs. the expiry date so the UI and
+// the warnings on "Oggi" can never drift apart.
+export function deriveStatoAbbonamento(
+  stato: StatoAbbonamento,
+  scadenza: string,
+  today: Date = new Date(),
+): StatoAbbonamento {
+  if (stato === "cancelled") return "cancelled";
+
+  const todayUtc = Date.UTC(
+    today.getUTCFullYear(),
+    today.getUTCMonth(),
+    today.getUTCDate(),
+  );
+  const expiryUtc = new Date(`${scadenza}T00:00:00Z`).getTime();
+
+  if (expiryUtc < todayUtc) return "expired";
+
+  const diffDays = Math.round((expiryUtc - todayUtc) / 86_400_000);
+  if (diffDays <= EXPIRING_WINDOW_DAYS) return "expiring";
+
+  return "active";
+}
+
 export function formatData(data: string | null): string {
   if (!data) return "Non specificata";
   return new Intl.DateTimeFormat("it-IT", {

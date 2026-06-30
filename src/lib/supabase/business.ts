@@ -14,3 +14,21 @@ export async function getActiveBusinessId(
 
   return data?.business_id ?? null;
 }
+
+// Extra app-level guard on top of RLS: confirms a client id actually
+// belongs to the given business before it gets linked to a payment,
+// subscription or quote.
+export async function clientBelongsToBusiness(
+  supabase: SupabaseClient,
+  clientId: string,
+  businessId: string,
+): Promise<boolean> {
+  const { data } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("id", clientId)
+    .eq("business_id", businessId)
+    .maybeSingle();
+
+  return Boolean(data);
+}

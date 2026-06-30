@@ -13,6 +13,7 @@ import { AbbonamentoFormDialog } from "@/components/abbonamenti/abbonamento-form
 import { EliminaAbbonamentoDialog } from "@/components/abbonamenti/elimina-abbonamento-dialog";
 import {
   STATO_ABBONAMENTO_LABELS,
+  deriveStatoAbbonamento,
   formatData,
   type AbbonamentoRecord,
 } from "@/lib/abbonamenti/types";
@@ -40,7 +41,8 @@ export function AbbonamentiTable({
           </TableHeader>
           <TableBody>
             {abbonamenti.map((a) => {
-              const statoLabel = STATO_ABBONAMENTO_LABELS[a.stato];
+              const statoLabel =
+                STATO_ABBONAMENTO_LABELS[deriveStatoAbbonamento(a.stato, a.scadenza)];
               const scadenzaLabel = formatData(a.scadenza);
 
               return (

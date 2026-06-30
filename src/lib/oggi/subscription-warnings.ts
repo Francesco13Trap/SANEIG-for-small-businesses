@@ -1,4 +1,4 @@
-import type { AbbonamentoRecord } from "@/lib/abbonamenti/types";
+import { deriveStatoAbbonamento, type AbbonamentoRecord } from "@/lib/abbonamenti/types";
 
 export type SubscriptionWarningKind = "expired" | "expiring";
 
@@ -8,8 +8,6 @@ export type SubscriptionWarning = {
   cliente: string;
   message: string;
 };
-
-const EXPIRING_WINDOW_DAYS = 7;
 
 // Checked in this exact order so an abbonamento matching more than one
 // condition produces a single warning, under its most urgent applicable
@@ -33,12 +31,11 @@ function diffInDays(later: Date, earlier: Date): number {
 function classify(
   abbonamento: AbbonamentoRecord,
   todayUtc: Date,
-  expiryDate: Date,
 ): SubscriptionWarningKind | null {
-  if (abbonamento.stato === "cancelled") return null;
+  const derived = deriveStatoAbbonamento(abbonamento.stato, abbonamento.scadenza, todayUtc);
 
-  if (expiryDate < todayUtc) return "expired";
-  if (diffInDays(expiryDate, todayUtc) <= EXPIRING_WINDOW_DAYS) return "expiring";
+  if (derived === "expired") return "expired";
+  if (derived === "expiring") return "expiring";
 
   return null;
 }
@@ -72,10 +69,10 @@ export function getSubscriptionWarnings(
 
   const warnings: SubscriptionWarning[] = [];
   for (const abbonamento of abbonamenti) {
-    const expiryDate = parseScadenza(abbonamento.scadenza);
-    const kind = classify(abbonamento, todayUtc, expiryDate);
+    const kind = classify(abbonamento, todayUtc);
     if (!kind) continue;
 
+    const expiryDate = parseScadenza(abbonamento.scadenza);
     warnings.push({
       kind,
       abbonamentoId: abbonamento.id,

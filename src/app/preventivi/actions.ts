@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
-import { getActiveBusinessId } from "@/lib/supabase/business";
+import { clientBelongsToBusiness, getActiveBusinessId } from "@/lib/supabase/business";
 import { parseStatoPreventivo } from "@/lib/preventivi/types";
 
 export type PreventivoFormState = { error?: string; success?: string } | undefined;
@@ -51,6 +51,10 @@ export async function addPreventivo(
 
   if (!businessId) {
     return { error: "Non è stato possibile salvare il preventivo." };
+  }
+
+  if (!(await clientBelongsToBusiness(supabase, clienteId, businessId))) {
+    return { error: "Il cliente selezionato non è valido." };
   }
 
   const { error } = await supabase.from("quotes").insert({
@@ -101,6 +105,10 @@ export async function updatePreventivo(
 
   if (!businessId) {
     return { error: "Non è stato possibile salvare il preventivo." };
+  }
+
+  if (!(await clientBelongsToBusiness(supabase, clienteId, businessId))) {
+    return { error: "Il cliente selezionato non è valido." };
   }
 
   const { error } = await supabase

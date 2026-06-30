@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
-import { getActiveBusinessId } from "@/lib/supabase/business";
+import { clientBelongsToBusiness, getActiveBusinessId } from "@/lib/supabase/business";
 import { parseStatoAbbonamento } from "@/lib/abbonamenti/types";
 
 export type AbbonamentoFormState = { error?: string; success?: string } | undefined;
@@ -45,6 +45,10 @@ export async function addAbbonamento(
 
   if (!businessId) {
     return { error: "Non è stato possibile salvare l'abbonamento." };
+  }
+
+  if (clienteId && !(await clientBelongsToBusiness(supabase, clienteId, businessId))) {
+    return { error: "Il cliente selezionato non è valido." };
   }
 
   const { error } = await supabase.from("subscriptions").insert({
@@ -91,6 +95,10 @@ export async function updateAbbonamento(
 
   if (!businessId) {
     return { error: "Non è stato possibile salvare l'abbonamento." };
+  }
+
+  if (clienteId && !(await clientBelongsToBusiness(supabase, clienteId, businessId))) {
+    return { error: "Il cliente selezionato non è valido." };
   }
 
   const { error } = await supabase
